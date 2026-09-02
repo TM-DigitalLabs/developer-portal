@@ -30,12 +30,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create GitHub App installation token
+      - name: Create GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.GITHUB_APP_CLIENT_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          client-id: ${{ vars.DOCS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DOCS_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
       - name: Test custom portal logic
