@@ -78,34 +78,69 @@ New category values require only a registry entry; they are not hardcoded in the
 
 ## GitHub App setup
 
-Create a GitHub App installed on the repositories that may appear in the registry. The synchronization App should have the minimum required permission:
+The portal uses two GitHub Apps with separate responsibilities:
 
-- Repository permissions: <code>Contents: Read-only</code>
+- Documentation Sync App (existing): <code>Contents: Read-only</code>, installed on the portal repository and every registered source repository. The portal workflow expects repository variable <code>DOCS_APP_CLIENT_ID</code> and repository secret <code>DOCS_APP_PRIVATE_KEY</code>.
+- Developer Portal Dispatch (dedicated): <code>Actions: Read and write</code> plus GitHub-mandatory <code>Metadata: Read-only</code>, installed only on the <code>developer-portal</code> repository. It has no Contents write access and is not installed on source repositories.
 
-Install the App on the portal repository and all registered source repositories. The portal workflow expects:
+The portal workflow uses <code>actions/create-github-app-token@v3</code> to create a short-lived synchronization token from the existing Sync App. The token is passed through <code>GITHUB_TOKEN</code> to synchronization and is never sent to the browser or written to generated output.
 
-- Repository variable <code>GITHUB_APP_CLIENT_ID</code>.
-- Repository secret <code>GITHUB_APP_PRIVATE_KEY</code> containing the App private key.
+The source trigger workflow uses the Dispatch App credentials:
 
-The workflow uses <code>actions/create-github-app-token</code> to create a short-lived installation token. The token is passed to synchronization through <code>GITHUB_TOKEN</code>, is scoped to the build job, and is never sent to the browser or written to generated output.
+- repository variable <code>DOCS_DISPATCH_APP_CLIENT_ID</code>;
+- repository secret <code>DOCS_DISPATCH_APP_PRIVATE_KEY</code> containing the App private key.
 
-For local work, obtain an appropriate installation token through your organization’s approved GitHub App process and export it as <code>GITHUB_TOKEN</code>. Do not use a personal access token as the production setup.
-
-If using GitHub Enterprise Server, set <code>GITHUB_API_URL</code> to the API base URL.
+Never commit or print private keys, installation tokens, or secret values. Do not use a personal access token for this integration.
 
 ## Automatic rebuilds from source repositories
 
-Copy <code>examples/project-docs-updated.yml</code> into a source project repository. Configure:
+Source repositories should trigger the portal only; synchronization, validation, building, and artifact publishing remain in <code>developer-portal</code>.
 
-- <code>PORTAL_DISPATCH_APP_CLIENT_ID</code> repository variable.
-- <code>PORTAL_DISPATCH_APP_PRIVATE_KEY</code> repository secret.
-- <code>PORTAL_OWNER</code> repository variable.
-- <code>PORTAL_REPOSITORY_NAME</code> repository variable.
+Create <code>.github/workflows/developer-portal-docs.yml</code> in a registered source repository:
 
-The dispatch-only App should be installed on the portal repository and have only the narrowly scoped permission needed to dispatch the event. The example triggers only when a push to <code>main</code> changes <code>docs/**</code>, then sends the <code>documentation-updated</code> event.
+```yaml
+name: Rebuild Developer Portal Documentation
 
-Documentation changes must be made in the source project repository. Never edit generated portal copies.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
 
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Developer Portal dispatch token
+        id: dispatch-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.DOCS_DISPATCH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DOCS_DISPATCH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: developer-portal
+
+      - name: Trigger Developer Portal workflow
+        env:
+          GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
+        run: gh workflow run portal.yml --repo "${{ github.repository_owner }}/developer-portal" --ref main
+```
+
+The portal workflow filename is <code>.github/workflows/portal.yml</code> and it supports <code>workflow_dispatch</code>. It validates the registry, synchronizes documentation, validates links, builds Astro/Starlight output, and publishes the static artifact.
+
+To adopt this mechanism in another registered source repository:
+
+1. Install the existing Documentation Sync App on the source repository with <code>Contents: Read-only</code>.
+2. Install the Dispatch App only on <code>developer-portal</code>; do not install it on the source repository.
+3. Create the two Dispatch App credentials above in the source repository.
+4. Copy the trigger workflow and keep its repository target restricted to <code>developer-portal</code>.
+5. Open a PR and verify a documentation push to <code>main</code> starts <code>portal.yml</code>.
+
+Local work may use an approved short-lived Sync App installation token through <code>GITHUB_TOKEN</code>. If using GitHub Enterprise Server, set <code>GITHUB_API_URL</code> to the API base URL.
 ## Source metadata and links
 
 Every generated document receives:
