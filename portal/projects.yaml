@@ -1,4 +1,11 @@
 version: 1
 
 # Add real repositories here. The source repository remains authoritative for documentation.
-projects: []
+projects:
+  - id: trainee-pulse
+    name: TraineePulse
+    description: Technical documentation for the TraineePulse platform
+    category: product
+    repository: TM-DigitalLabs/trainee-pulse
+    branch: main
+    docsPath: docs
