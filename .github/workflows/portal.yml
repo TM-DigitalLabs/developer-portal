@@ -46,16 +46,47 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: npm run docs:validate
 
-      - name: Build portal
+      - name: Pull Vercel production configuration
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: npx --no-install vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build Vercel production output
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          npm run build
-          npm run typecheck
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: npx --no-install vercel build --prod --token="$VERCEL_TOKEN"
 
-      - name: Upload static portal output
+      - name: Typecheck synchronized portal
+        run: npm run typecheck
+
+      - name: Verify prebuilt deployment output
+        shell: bash
+        run: |
+          test -d .vercel/output
+          test -n "$(find .vercel/output -type f -print -quit)"
+          if grep -R -a -l -E \
+            -e 'BEGIN (RSA|EC|OPENSSH|PGP) PRIVATE KEY' \
+            -e 'DOCS_APP_PRIVATE_KEY' \
+            .vercel/output; then
+            echo "Deployment output contains credential material."
+            exit 1
+          fi
+
+      - name: Upload Vercel deployment output
         uses: actions/upload-artifact@v7
         with:
-          name: developer-portal-static
-          path: dist/
+          name: developer-portal-vercel-output
+          path: .vercel/output/
           if-no-files-found: error
+
+      - name: Deploy prebuilt Vercel output
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: npx --no-install vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

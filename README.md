@@ -22,10 +22,37 @@ flowchart TD
 
     P[GitHub App + Documentation Sync] --> G[Generated ignored content]
     G --> S[Astro + Starlight]
-    S --> D[Static Portal dist/]
+    S --> D[GitHub Actions .vercel/output]
+    D --> V[Vercel prebuilt deployment]
 ```
 
-The build resolves each configured branch to a commit, reads the source documentation tree through GitHub’s API, generates a namespaced Starlight content tree, records source metadata, validates internal links, and produces static output.
+The build resolves each configured branch to a commit, reads the source documentation tree through GitHub’s API, generates a namespaced Starlight content tree, records source metadata, validates internal links, and produces static output. Production hosting uses a prebuilt Vercel deployment: GitHub Actions runs the build and uploads only `.vercel/output` to Vercel.
+
+## Production deployment
+
+The production flow is:
+
+```text
+source repositories docs/**
+        -> portal workflow dispatch
+        -> short-lived Docs Sync App token
+        -> tests and registry validation
+        -> vercel build --prod in GitHub Actions
+        -> .vercel/output
+        -> vercel deploy --prebuilt --prod
+        -> Vercel hosting
+```
+
+The Vercel project is not connected to GitHub and does not run an independent build. The Vercel Build Command remains `npm run build` so the existing synchronization and link-validation lifecycle is preserved when the local Vercel build runs. No server rendering or separate documentation copy is used.
+
+Required Developer Portal repository configuration:
+
+- Variables: `DOCS_APP_CLIENT_ID`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+- Secrets: `DOCS_APP_PRIVATE_KEY`, `VERCEL_TOKEN`.
+
+`VERCEL_TOKEN` is used only by GitHub Actions. Never commit or print it. The Docs Sync App private key and the short-lived `GITHUB_TOKEN` remain in GitHub Actions; neither is stored in Vercel or emitted into `.vercel/output`.
+
+Deployment Protection uses Vercel Authentication with Standard Protection. This protects deployment and preview URLs, but the current Vercel plan does not guarantee that the production domain is private. Treat the production URL as a documented security gap until Advanced Deployment Protection or an external access layer is enabled. Do not configure a custom domain before this is resolved.
 
 ## Local development
 
@@ -157,4 +184,4 @@ The source metadata is also available in <code>src/generated/project-metadata.js
 
 Custom synchronization, registry, metadata, and link-validation logic is covered by Vitest with mocked providers and temporary fixtures. Tests do not require access to real private repositories.
 
-The portal is intentionally static-output-only and does not implement portal-user authentication. Place the generated <code>dist/</code> output behind the organization’s chosen access layer or hosting platform.
+The portal is intentionally static-output-only and does not implement portal-user authentication. Its production access control is provided by Vercel Deployment Protection, with the Standard Protection limitation documented above.
