@@ -1,32 +1,44 @@
-name: Notify developer portal
+name: Rebuild Developer Portal Documentation
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'docs/**'
+      - "docs/**"
+
+permissions:
+  contents: read
 
 jobs:
-  notify-portal:
+  dispatch:
+    name: Dispatch Developer Portal rebuild
     runs-on: ubuntu-latest
     steps:
-      - name: Create dispatch-only GitHub App token
-        id: portal-token
+      - name: Validate Dispatch App configuration
+        env:
+          DISPATCH_CLIENT_ID: ${{ vars.DOCS_DISPATCH_APP_CLIENT_ID }}
+          DISPATCH_PRIVATE_KEY: ${{ secrets.DOCS_DISPATCH_APP_PRIVATE_KEY }}
+        run: |
+          if [ -z "$DISPATCH_CLIENT_ID" ]; then
+            echo "::error::Missing repository variable DOCS_DISPATCH_APP_CLIENT_ID."
+            exit 1
+          fi
+          if [ -z "$DISPATCH_PRIVATE_KEY" ]; then
+            echo "::error::Missing repository secret DOCS_DISPATCH_APP_PRIVATE_KEY."
+            exit 1
+          fi
+
+      - name: Create Developer Portal dispatch token
+        id: dispatch-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.PORTAL_DISPATCH_APP_CLIENT_ID }}
-          private-key: ${{ secrets.PORTAL_DISPATCH_APP_PRIVATE_KEY }}
-          owner: ${{ vars.PORTAL_OWNER }}
-          repositories: ${{ vars.PORTAL_REPOSITORY_NAME }}
-          permission-contents: write
+          client-id: ${{ vars.DOCS_DISPATCH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DOCS_DISPATCH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: developer-portal
 
-      - name: Trigger portal rebuild
+      - name: Trigger Developer Portal workflow
         env:
-          GH_TOKEN: ${{ steps.portal-token.outputs.token }}
-          PORTAL_OWNER: ${{ vars.PORTAL_OWNER }}
-          PORTAL_REPOSITORY_NAME: ${{ vars.PORTAL_REPOSITORY_NAME }}
-        run: >-
-          gh api --method POST
-          "/repos/$PORTAL_OWNER/$PORTAL_REPOSITORY_NAME/dispatches"
-          -f event_type=documentation-updated
+          GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
+        run: gh workflow run portal.yml --repo ${{ github.repository_owner }}/developer-portal --ref main
