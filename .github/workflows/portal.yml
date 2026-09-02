@@ -69,7 +69,7 @@ jobs:
         run: |
           test -d .vercel/output
           test -n "$(find .vercel/output -type f -print -quit)"
-          if rg --hidden --no-messages -a -l \
+          if grep -R -a -l -E \
             -e 'BEGIN (RSA|EC|OPENSSH|PGP) PRIVATE KEY' \
             -e 'DOCS_APP_PRIVATE_KEY' \
             .vercel/output; then
