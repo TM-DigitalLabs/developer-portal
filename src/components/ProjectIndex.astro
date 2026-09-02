@@ -1,9 +1,9 @@
 ---
 import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import type { ProjectMetadataFile } from '../../scripts/lib/types.js';
 
-const metadataPath = fileURLToPath(new URL('../generated/project-metadata.json', import.meta.url));
+const metadataPath = resolve(process.cwd(), 'src/generated/project-metadata.json');
 const metadata: ProjectMetadataFile = existsSync(metadataPath)
   ? JSON.parse(readFileSync(metadataPath, 'utf8')) as ProjectMetadataFile
   : { version: 1, generatedAt: '', projects: [] };
