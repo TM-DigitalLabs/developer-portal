@@ -2,6 +2,7 @@ import { mkdtemp, readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { generateSidebarModule, sourceFileUrl, toProjectMetadata } from '../scripts/lib/metadata.js';
 import { namespacedDestination, projectDestination, synchronizeProjects } from '../scripts/lib/sync.js';
 import type { GitHubSourceProvider, ProjectDefinition, SourceInspection } from '../scripts/lib/types.js';
@@ -49,6 +50,31 @@ describe('documentation synchronization', () => {
 
     await synchronizeProjects({ projects: [project], provider: provider(sourceFiles.slice(0, 2)), generatedRoot, metadataPath, sidebarPath, now: () => new Date('2026-01-02T03:04:05.000Z') });
     await expect(stat(join(generatedRoot, 'payments-api/old.md'))).rejects.toThrow();
+  });
+
+  it('keeps generated ISO timestamps as strings in parsed frontmatter', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'portal-test-frontmatter-'));
+    const generatedRoot = join(root, 'docs/projects');
+    const metadataPath = join(root, 'generated/project-metadata.json');
+    const sidebarPath = join(root, 'generated/sidebar.mjs');
+    const syncedAt = '2026-01-02T03:04:05.000Z';
+
+    await synchronizeProjects({
+      projects: [project],
+      provider: provider([{ path: 'index.md', content: '# Payments' }]),
+      generatedRoot,
+      metadataPath,
+      sidebarPath,
+      now: () => new Date(syncedAt),
+    });
+
+    const markdown = await readFile(join(generatedRoot, 'payments-api/index.md'), 'utf8');
+    const frontmatter = markdown.match(/^---\n([\s\S]*?)\n---\n/)?.[1];
+    expect(frontmatter).toBeDefined();
+
+    const parsed = parse(frontmatter ?? '', { schema: 'yaml-1.1' }) as { source: { syncedAt: unknown } };
+    expect(typeof parsed.source.syncedAt).toBe('string');
+    expect(parsed.source.syncedAt).toBe(syncedAt);
   });
 
   it('fails and leaves no generated output when a source cannot be retrieved', async () => {
