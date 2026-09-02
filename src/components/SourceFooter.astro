@@ -1,0 +1,27 @@
+---
+import DefaultFooter from '@astrojs/starlight/components/Footer.astro';
+
+interface SourceMetadata {
+  repository: string;
+  branch: string;
+  commit: string;
+  syncedAt: string;
+}
+
+interface StarlightRoute {
+  entry: { data: { source?: SourceMetadata } };
+}
+
+const route = (Astro.locals as unknown as { starlightRoute?: StarlightRoute }).starlightRoute;
+const source = route?.entry.data.source;
+---
+
+{source && (
+  <div class="source-info" aria-label="Source information">
+    <span>Source: <a href={'https://github.com/' + source.repository}>{source.repository}</a></span>
+    <span>Branch: <code>{source.branch}</code></span>
+    <span>Commit: <code>{source.commit}</code></span>
+    <span>Synced: <time datetime={source.syncedAt}>{source.syncedAt}</time></span>
+  </div>
+)}
+<DefaultFooter><slot /></DefaultFooter>

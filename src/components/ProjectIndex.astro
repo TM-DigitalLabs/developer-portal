@@ -1,0 +1,48 @@
+---
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import type { ProjectMetadataFile } from '../../scripts/lib/types.js';
+
+const metadataPath = fileURLToPath(new URL('../generated/project-metadata.json', import.meta.url));
+const metadata: ProjectMetadataFile = existsSync(metadataPath)
+  ? JSON.parse(readFileSync(metadataPath, 'utf8')) as ProjectMetadataFile
+  : { version: 1, generatedAt: '', projects: [] };
+const groups = new Map<string, ProjectMetadataFile['projects']>();
+for (const project of metadata.projects) {
+  const group = groups.get(project.category) ?? [];
+  group.push(project);
+  groups.set(project.category, group);
+}
+---
+
+<div id="registered-projects" class="project-index">
+  {metadata.projects.length === 0 ? (
+    <div class="empty-state">
+      <strong>No projects are registered yet.</strong>
+      <p>Add a project to <code>portal/projects.yaml</code> after its source repository contains <code>docs/index.md</code>.</p>
+    </div>
+  ) : (
+    [...groups.entries()].map(([category, projects]) => (
+      <section class="project-group" aria-labelledby={'category-' + category}>
+        <h3 id={'category-' + category}>{category}</h3>
+        <div class="project-grid">
+          {projects.map((project) => (
+            <article class="project-card">
+              <div class="project-card__topline">
+                <span class="project-category">{project.category}</span>
+                <span class:list={['availability', { 'availability--ready': project.documentationAvailable }]}>
+                  {project.documentationAvailable ? 'Documentation available' : 'Documentation unavailable'}
+                </span>
+              </div>
+              <h4>{project.name}</h4>
+              <p>{project.description}</p>
+              <a class="project-card__link" href={'/projects/' + project.projectId + '/'}>
+                Open documentation <span aria-hidden="true">→</span>
+              </a>
+            </article>
+          ))}
+        </div>
+      </section>
+    ))
+  )}
+</div>

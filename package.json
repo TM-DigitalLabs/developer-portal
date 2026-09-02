@@ -1,0 +1,31 @@
+{
+  "name": "developer-documentation-portal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "npm run docs:sync && npm run docs:links && astro build",
+    "preview": "astro preview",
+    "docs:validate": "tsx scripts/validate-projects.ts",
+    "docs:sync": "tsx scripts/sync-docs.ts",
+    "docs:links": "tsx scripts/validate-links.ts",
+    "test": "vitest run",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.11",
+    "astro": "^7.2.10",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^24.10.0",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  }
+}

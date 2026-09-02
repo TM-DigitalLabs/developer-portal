@@ -1,0 +1,32 @@
+name: Notify developer portal
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+
+jobs:
+  notify-portal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create dispatch-only GitHub App token
+        id: portal-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.PORTAL_DISPATCH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.PORTAL_DISPATCH_APP_PRIVATE_KEY }}
+          owner: ${{ vars.PORTAL_OWNER }}
+          repositories: ${{ vars.PORTAL_REPOSITORY_NAME }}
+          permission-contents: write
+
+      - name: Trigger portal rebuild
+        env:
+          GH_TOKEN: ${{ steps.portal-token.outputs.token }}
+          PORTAL_OWNER: ${{ vars.PORTAL_OWNER }}
+          PORTAL_REPOSITORY_NAME: ${{ vars.PORTAL_REPOSITORY_NAME }}
+        run: >-
+          gh api --method POST
+          "/repos/$PORTAL_OWNER/$PORTAL_REPOSITORY_NAME/dispatches"
+          -f event_type=documentation-updated

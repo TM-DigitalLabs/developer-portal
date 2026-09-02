@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.*
+!.env.example
+
+# Generated from registered source repositories. Never edit or commit these files.
+src/content/docs/projects/
+src/generated/project-metadata.json
+src/generated/sidebar.mjs

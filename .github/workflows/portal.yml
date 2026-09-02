@@ -1,0 +1,61 @@
+name: Build developer documentation portal
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  repository_dispatch:
+    types:
+      - documentation-updated
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out portal
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GITHUB_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Test custom portal logic
+        run: npm test
+
+      - name: Validate project registry and sources
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: npm run docs:validate
+
+      - name: Build portal
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          npm run build
+          npm run typecheck
+
+      - name: Upload static portal output
+        uses: actions/upload-artifact@v7
+        with:
+          name: developer-portal-static
+          path: dist/
+          if-no-files-found: error
