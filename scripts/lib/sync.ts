@@ -7,6 +7,7 @@ import { buildMetadataFile, generateSidebarModule, sourceFileUrl, toProjectMetad
 import type { GitHubSourceProvider, ProjectDefinition, SourceFile, SourceSnapshot } from './types.js';
 
 const MARKDOWN_PATTERN = /\.(md|mdx)$/i;
+const FRONTMATTER_STRINGIFY_OPTIONS = { schema: 'yaml-1.1' } as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -48,7 +49,7 @@ export function addGeneratedFrontmatter(content: string, project: ProjectDefinit
     editUrl: sourceFileUrl(project, sourcePath),
     source,
   };
-  return '---\n' + stringify(generated) + '---\n' + body;
+  return '---\n' + stringify(generated, FRONTMATTER_STRINGIFY_OPTIONS) + '---\n' + body;
 }
 
 export function projectDestination(root: string, projectId: string): string {
