@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-label="TM">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-labelledby="title desc">
+  <title id="title">TM mark</title>
+  <desc id="desc">Geometric black and orange TM mark</desc>
   <g shape-rendering="geometricPrecision">
     <rect x="604" y="178" width="52" height="53" fill="#ff4f00"/>
     <rect x="529" y="238" width="52" height="53" fill="#ff4f00"/>

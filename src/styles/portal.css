@@ -1,7 +1,7 @@
 :root {
-  --sl-color-accent-low: #dce9ff;
-  --sl-color-accent: #2463eb;
-  --sl-color-accent-high: #123b91;
+  --sl-color-accent-low: #fff0d6;
+  --sl-color-accent: #e47a1a;
+  --sl-color-accent-high: #8e3f00;
   --portal-ink: #122033;
   --portal-muted: #5c6b7e;
   --portal-border: #d9e1ec;
@@ -9,9 +9,9 @@
 }
 
 [data-theme='dark'] {
-  --sl-color-accent-low: #172d5b;
-  --sl-color-accent: #8eb5ff;
-  --sl-color-accent-high: #d4e2ff;
+  --sl-color-accent-low: #5a2f0c;
+  --sl-color-accent: #ffad5c;
+  --sl-color-accent-high: #ffe0bd;
   --portal-ink: #edf3ff;
   --portal-muted: #aab7ca;
   --portal-border: #2a3850;

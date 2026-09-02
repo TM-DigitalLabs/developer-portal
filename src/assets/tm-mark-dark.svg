@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-labelledby="title desc">
+  <title id="title">TM mark</title>
+  <desc id="desc">Geometric white and orange TM mark</desc>
+  <g shape-rendering="geometricPrecision">
+    <rect x="604" y="178" width="52" height="53" fill="#ff4f00"/>
+    <rect x="529" y="238" width="52" height="53" fill="#ff4f00"/>
+    <rect x="675" y="238" width="52" height="53" fill="#ffffff"/>
+    <rect x="604" y="301" width="52" height="52" fill="#ffffff"/>
+    <path fill="#ffffff" d="M240 391H728V455H453V758L669 887L809 807V670L871 637V843L669 963L389 794V455H240Z"/>
+    <path fill="#ff4f00" d="M598 490H678L752 535L1002 390V770L942 805V498L752 609L598 514Z"/>
+  </g>
+</svg>

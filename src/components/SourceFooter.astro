@@ -17,11 +17,11 @@ const source = route?.entry.data.source;
 ---
 
 {source && (
-  <div class="source-info" aria-label="Source information">
-    <span>Source: <a href={'https://github.com/' + source.repository}>{source.repository}</a></span>
-    <span>Branch: <code>{source.branch}</code></span>
+    <div class="source-info" aria-label="Informacje o źródle">
+    <span>Źródło: <a href={'https://github.com/' + source.repository}>{source.repository}</a></span>
+    <span>Gałąź: <code>{source.branch}</code></span>
     <span>Commit: <code>{source.commit}</code></span>
-    <span>Synced: <time datetime={source.syncedAt}>{source.syncedAt}</time></span>
+    <span>Zsynchronizowano: <time datetime={source.syncedAt}>{source.syncedAt}</time></span>
   </div>
 )}
 <DefaultFooter><slot /></DefaultFooter>
