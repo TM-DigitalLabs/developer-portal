@@ -18,8 +18,8 @@ for (const project of metadata.projects) {
 <div id="registered-projects" class="project-index">
   {metadata.projects.length === 0 ? (
     <div class="empty-state">
-      <strong>No projects are registered yet.</strong>
-      <p>Add a project to <code>portal/projects.yaml</code> after its source repository contains <code>docs/index.md</code>.</p>
+      <strong>Nie ma jeszcze zarejestrowanych projektów.</strong>
+      <p>Dodaj projekt do <code>portal/projects.yaml</code>, gdy repozytorium źródłowe zawiera <code>docs/index.md</code>.</p>
     </div>
   ) : (
     [...groups.entries()].map(([category, projects]) => (
@@ -31,13 +31,13 @@ for (const project of metadata.projects) {
               <div class="project-card__topline">
                 <span class="project-category">{project.category}</span>
                 <span class:list={['availability', { 'availability--ready': project.documentationAvailable }]}>
-                  {project.documentationAvailable ? 'Documentation available' : 'Documentation unavailable'}
+                  {project.documentationAvailable ? 'Dokumentacja dostępna' : 'Dokumentacja niedostępna'}
                 </span>
               </div>
               <h4>{project.name}</h4>
               <p>{project.description}</p>
               <a class="project-card__link" href={'/projects/' + project.projectId + '/'}>
-                Open documentation <span aria-hidden="true">→</span>
+                Otwórz dokumentację <span aria-hidden="true">→</span>
               </a>
             </article>
           ))}
