@@ -1,12 +1,14 @@
 import { mkdtemp, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, posix, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse, stringify } from 'yaml';
 import { ProjectPortalError } from './errors.js';
-import { buildMetadataFile, generateSidebarModule, sourceFileUrl, toProjectMetadata } from './metadata.js';
+import { buildMetadataFile, generateSidebarModule, sourceFileUrl, sourceRepositoryFileUrl, toProjectMetadata } from './metadata.js';
 import type { GitHubSourceProvider, ProjectDefinition, SourceFile, SourceSnapshot } from './types.js';
 
 const MARKDOWN_PATTERN = /\.(md|mdx)$/i;
+const MARKDOWN_LINK_PATTERN = /!?(?:\[[^\]]*\])\((<[^>]+>|[^)\s]+)(?:\s+[^)]*)?\)/g;
+const IGNORED_LINK_SCHEMES = /^(?:https?:|mailto:|tel:|data:|\/\/)/i;
 const FRONTMATTER_STRINGIFY_OPTIONS = { schema: 'yaml-1.1' } as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -17,6 +19,39 @@ function titleFromContent(content: string, sourcePath: string): string {
   const heading = content.match(/^#\s+(.+)$/m)?.[1]?.trim();
   if (heading) return heading.replace(/[#*_\x60]/g, '').trim();
   return basename(sourcePath).replace(/\.(md|mdx)$/i, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function rewriteSourceRelativeLinks(content: string, project: ProjectDefinition, sourcePath: string): string {
+  const sourceDocsRoot = posix.normalize(project.docsPath);
+  const sourceDirectory = posix.dirname(sourcePath);
+  let inFence = false;
+
+  return content.split(/\r?\n/).map((line) => {
+    if (/^\s*(?:\x60\x60\x60|~~~)/.test(line)) {
+      inFence = !inFence;
+      return line;
+    }
+    if (inFence) return line;
+
+    return line.replace(MARKDOWN_LINK_PATTERN, (fullMatch, capturedTarget: string) => {
+      const angleWrapped = capturedTarget.startsWith('<') && capturedTarget.endsWith('>');
+      const target = capturedTarget.replace(/^<|>$/g, '');
+      if (!target || target.startsWith('#') || target.startsWith('/') || IGNORED_LINK_SCHEMES.test(target)) return fullMatch;
+
+      const suffixIndex = target.search(/[?#]/);
+      const targetPath = suffixIndex === -1 ? target : target.slice(0, suffixIndex);
+      const suffix = suffixIndex === -1 ? '' : target.slice(suffixIndex);
+      if (!targetPath) return fullMatch;
+
+      const repositoryPath = posix.normalize(posix.join(sourceDocsRoot, sourceDirectory, targetPath));
+      const isInsideDocumentation = repositoryPath === sourceDocsRoot || repositoryPath.startsWith(sourceDocsRoot + '/');
+      if (isInsideDocumentation || repositoryPath === '..' || repositoryPath.startsWith('../')) return fullMatch;
+
+      const sourceUrl = sourceRepositoryFileUrl(project, repositoryPath) + suffix;
+      const replacement = angleWrapped ? '<' + sourceUrl + '>' : sourceUrl;
+      return fullMatch.replace(capturedTarget, replacement);
+    });
+  }).join('\n');
 }
 
 export function addGeneratedFrontmatter(content: string, project: ProjectDefinition, sourcePath: string, commit: string, syncedAt: string): string {
@@ -49,7 +84,7 @@ export function addGeneratedFrontmatter(content: string, project: ProjectDefinit
     editUrl: sourceFileUrl(project, sourcePath),
     source,
   };
-  return '---\n' + stringify(generated, FRONTMATTER_STRINGIFY_OPTIONS) + '---\n' + body;
+  return '---\n' + stringify(generated, FRONTMATTER_STRINGIFY_OPTIONS) + '---\n' + rewriteSourceRelativeLinks(body, project, sourcePath);
 }
 
 export function projectDestination(root: string, projectId: string): string {

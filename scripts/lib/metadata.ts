@@ -4,10 +4,14 @@ export function sourceRepositoryUrl(repository: string): string {
   return 'https://github.com/' + repository;
 }
 
-export function sourceFileUrl(project: ProjectDefinition, sourcePath: string): string {
+export function sourceRepositoryFileUrl(project: ProjectDefinition, repositoryPath: string): string {
   const branch = project.branch.split('/').map(encodeURIComponent).join('/');
-  const path = [project.docsPath, sourcePath].filter(Boolean).join('/').split('/').map(encodeURIComponent).join('/');
+  const path = repositoryPath.split('/').filter(Boolean).map(encodeURIComponent).join('/');
   return sourceRepositoryUrl(project.repository) + '/blob/' + branch + '/' + path;
+}
+
+export function sourceFileUrl(project: ProjectDefinition, sourcePath: string): string {
+  return sourceRepositoryFileUrl(project, [project.docsPath, sourcePath].filter(Boolean).join('/'));
 }
 
 export function toProjectMetadata(snapshot: SourceSnapshot, syncedAt: string): ProjectMetadata {

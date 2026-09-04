@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { generateSidebarModule, sourceFileUrl, toProjectMetadata } from '../scripts/lib/metadata.js';
-import { namespacedDestination, projectDestination, synchronizeProjects } from '../scripts/lib/sync.js';
+import { addGeneratedFrontmatter, namespacedDestination, projectDestination, synchronizeProjects } from '../scripts/lib/sync.js';
 import type { GitHubSourceProvider, ProjectDefinition, SourceInspection } from '../scripts/lib/types.js';
 
 const project: ProjectDefinition = {
@@ -75,6 +75,20 @@ describe('documentation synchronization', () => {
     const parsed = parse(frontmatter ?? '', { schema: 'yaml-1.1' }) as { source: { syncedAt: unknown } };
     expect(typeof parsed.source.syncedAt).toBe('string');
     expect(parsed.source.syncedAt).toBe(syncedAt);
+  });
+
+  it('rewrites source-relative links outside docs to source repository URLs', () => {
+    const markdown = addGeneratedFrontmatter(
+      '[Artifact](../../apps/api/import.jsonl)\n\n[Docs](../index.md)\n\n```md\n[Example](../../apps/api/example.jsonl)\n```',
+      project,
+      'data/import.md',
+      'abc123',
+      '2026-01-02T03:04:05.000Z',
+    );
+
+    expect(markdown).toContain('[Artifact](https://github.com/acme/payments-api/blob/main/apps/api/import.jsonl)');
+    expect(markdown).toContain('[Docs](../index.md)');
+    expect(markdown).toContain('[Example](../../apps/api/example.jsonl)');
   });
 
   it('fails and leaves no generated output when a source cannot be retrieved', async () => {
